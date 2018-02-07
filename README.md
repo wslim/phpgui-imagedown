@@ -13,7 +13,7 @@ ImageDown is a php-gui application, use wxPHP/wxWidgets.
 #### 2) 下载和运行 Download and running
 1. Download 
 ```  
-git clone https://github.com/gwbnet/wxphp-imagedown.git
+git clone https://github.com/gwbnet/phpgui-imagedown.git
 or
 Directly download zip
 ```
