@@ -1,7 +1,7 @@
 # wxphp-imagedown
 
 ### 1. 简介 Intro
-ImageDown is a php-gui application, use wxPHP/wxWidgets.
+ImageDown is a php-gui application for down images easily, using wxPHP/wxWidgets.
 
 ### 2. 安装 Install
 

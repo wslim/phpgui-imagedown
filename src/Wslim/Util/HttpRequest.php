@@ -74,81 +74,83 @@ class HttpRequest
     }
     
     /**
-     * download, support multi url and multi save_path, return array
+     * downloads multi url, and save by save_paths, return array
      * 用于下载请求内容；返回header信息和body合并组成的数组，可根据 content_type 判断mime类型来确定内容类型
-     * 支持多个同时下载，save_path 可传递数组
+     * 支持多个同时下载，save_paths 可传递数组
      * 
-     * @param  string|array $url
-     * @param  string|array $save_path
+     * @param  string|array $urls
+     * @param  string|array $save_paths, if string as save_dir
      * @param  string|array $data
      * @param  array        $options
      * 
      * @return array  [
      *      'errcode'   => 0,       // 0 for success and negative number for failure
-     *      'body'      => '...',   // false for failed or string for success
-     *      'save_path' => 'save_path',
-     *      ...
+     *      'errmsg'    => '...',
+     *      'items'     => [
+     *          [
+     *              'body'      => '...',   // false for failed or string for success
+     *              'save_path' => 'save_path',
+     *              ...
+     *          ],
+     *          ...
+     *      ]
      * ]
-     *
-     * -- 返回结果示例
-     * {
-     "url": "http://file.api.weixin.qq.com/cgi-bin/media/get?access_token=My4oqLEyFVrgFF-XOZagdvbTt9XywYjGwMg_GxkPwql7-f0BpnvXFCOKBUyAf0agmZfMChW5ECSyTAgAoaoU2WMyj7aVHmB17ce4HzLRZ3XFTbm2vpKt_9gYA29xrwIKpnvH-BYmNFSddt7re5ZrIg&media_id=QQ9nj-7ctrqA8t3WKU3dQN24IuFV_516MfZRZNnQ0c-BFVkk66jUkPXF49QE9L1l",
-     "content_type": "image/jpeg",
-     "http_code": 200,
-     "header_size": 308,
-     "request_size": 316,
-     "filetime": -1,
-     "ssl_verify_result": 0,
-     "redirect_count": 0,
-     "total_time": 1.36,
-     "namelookup_time": 1.016,
-     "connect_time": 1.078,
-     "pretransfer_time": 1.078,
-     "size_upload": 0,
-     "size_download": 105542,
-     "speed_download": 77604,
-     "speed_upload": 0,
-     "download_content_length": 105542,
-     "upload_content_length": 0,
-     "starttransfer_time": 1.141,
-     "redirect_time": 0,
-     "body": ...        // if not set $save_path then return this, it is response body
-     "save_path": ...   // if set $save_path then return this, it is real save path
+     * 
+     * -- each item like this:
+     {
+         "url": "http://file.api.weixin.qq.com/cgi-bin/media/get?access_token=My4oqLEyFVrgFF-XOZagdvbTt9XywYjGwMg_GxkPwql7-f0BpnvXFCOKBUyAf0agmZfMChW5ECSyTAgAoaoU2WMyj7aVHmB17ce4HzLRZ3XFTbm2vpKt_9gYA29xrwIKpnvH-BYmNFSddt7re5ZrIg&media_id=QQ9nj-7ctrqA8t3WKU3dQN24IuFV_516MfZRZNnQ0c-BFVkk66jUkPXF49QE9L1l",
+         "content_type": "image/jpeg",
+         "http_code": 200,
+         "header_size": 308,
+         "request_size": 316,
+         "filetime": -1,
+         "ssl_verify_result": 0,
+         "redirect_count": 0,
+         "total_time": 1.36,
+         "namelookup_time": 1.016,
+         "connect_time": 1.078,
+         "pretransfer_time": 1.078,
+         "size_upload": 0,
+         "size_download": 105542,
+         "speed_download": 77604,
+         "speed_upload": 0,
+         "download_content_length": 105542,
+         "upload_content_length": 0,
+         "starttransfer_time": 1.141,
+         "redirect_time": 0,
+         "body": ...        // if not set $save_path then return this, it is response body
+         "save_path": ...   // if set $save_path then return this, it is real save path
      }
      */
-    static public function download($url, $save_path=null, $data=null, $options=null)
+    static public function downloads($urls, $save_paths=null, $data=null, $options=null)
     {
-        $urls = [];
-        $save_paths = [];
-        if (is_array($url)) {
-            foreach ($url as $k => $v) {
-                if (isset($v['save_path']) && isset($v['url'])) {
-                    $urls[]     = $v['url'];
-                    $save_paths[$v['url']] = $v['save_path'];
-                } else {
-                    $urls[]     = $v;
-                }
-            }
-        } else {
-            $urls = (array) $url;
-        }
+        $urls = (array) $urls;
         
         $save_dir = null;
-        if (!$save_paths) {
-            if (is_string($save_path)) {
-                $save_dir = str_replace("\\", "/", $save_path);
-                $save_path = null;
+        $newUrls = $newSavePaths = [];
+        foreach ($urls as $k => $v) {
+            if (isset($v['save_path']) && isset($v['url'])) {
+                $newUrls[]     = $v['url'];
+                $newSavePaths[$v['url']] = $v['save_path'];
             } else {
-                if (count($save_path) !== count($urls)) {
+                $newUrls[] = $v;
+            }
+        }
+        
+        if ($save_paths) {
+            if (is_string($save_paths)) {
+                $save_dir = str_replace("\\", "/", $save_paths);
+            } else {
+                if (count($save_paths) !== count($newUrls)) {
                     return ['errcode'=>-1, 'errmsg'=>'url/save_path setting error.'];
                 }
-                foreach ($save_path as $k => $v) {
-                    $save_paths[$urls[$k]] = $v;
+                foreach ($save_paths as $k => $v) {
+                    $newSavePaths[$newUrls[$k]] = $v;
                 }
             }
         }
         
-        $http = new static('GET', $urls, $data, $options);
+        $http = new static('GET', $newUrls, $data, $options);
         $multiRes = $http->execute()->getMultiResponse();
         
         $items = [];
@@ -170,23 +172,23 @@ class HttpRequest
                 continue;
             }
             
-            if ($save_dir || $save_paths) {
+            if ($save_dir || $newSavePaths) {
                 if ($save_dir) {
-                    if (count($urls) > 1 || substr($save_dir, count($save_dir)-1) == "/") {
+                    if (count($newUrls) > 1 || substr($save_dir, count($save_dir)-1) == "/") {
                         $real_path = explode('?', $res['url'], 2);
                         $real_path = $save_dir . pathinfo($real_path[0], PATHINFO_BASENAME);
                     } else {
                         $real_path = $save_dir;
                     }
                 } else {
-                    foreach ($save_paths as $u => $p) {
+                    foreach ($newSavePaths as $u => $p) {
                         if (stripos($res['url'], $u) !== false) {
                             $real_path = $p;
                             break;
                         }
                     }
                     if (!$real_path) {
-                        $real_path = $save_paths[0];
+                        $real_path = $newSavePaths[0];
                         $real_path = pathinfo($real_path, PATHINFO_DIRNAME) . '/'. pathinfo($res['url'], PATHINFO_BASENAME);
                     }
                 }
@@ -229,8 +231,25 @@ class HttpRequest
             $items[$k] = $item;
         }
         
-        return count($urls) > 1 ? ['errcode'=>0, 'items'=>$items] : $items[0];
+        return ['errcode'=>0, 'errmsg'=>'download files count:' . count($items), 'items'=>$items];
     }
+    
+    /**
+     * download one file
+     * @param  string $url
+     * @param  string $save_path
+     * @param  array|string $data
+     * @param  array $options
+     * @return array
+     * 
+     * @see static::downloads
+     */
+    static public function download($url, $save_path=null, $data=null, $options=null)
+    {
+        $res = static::downloads((array)$url, $save_path, $data, $options);
+        return !$res['errcode'] ? $res['items'][0] : $res;
+    }
+    
     
     /**********************************************************
      * instance mathods

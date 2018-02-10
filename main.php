@@ -9,8 +9,10 @@ require 'src/autoload.php';
 
 wxInitAllImageHandlers();
 
+$icon = __DIR__ . '/assets/logo.ico';
 //$main = new wxScrolledWindowDemo();
 $main = new ImageDownFrame();
+$main->SetIcon(new wxIcon($icon, wxBITMAP_TYPE_ICO));
 $main->SetMinClientSize($main->GetMinSize());
 $main->Show();
 $main->Maximize();

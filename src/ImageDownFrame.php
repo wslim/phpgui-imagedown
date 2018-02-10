@@ -4,8 +4,6 @@ use Wslim\Util\DataHelper;
 
 class ImageDownFrame extends ImageDownFrameBase
 {
-
-    
     /**
      * img array
      * 

@@ -264,7 +264,7 @@ class ImageDownTool
         }
         
         if ($down_imgs) {
-            $returns = HttpRequest::download($down_imgs);
+            $returns = HttpRequest::downloads($down_imgs);
             if ($returns && isset($returns['items'])) {
                 
                 foreach ($returns['items'] as $v) {
